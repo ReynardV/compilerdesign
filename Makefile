@@ -10,13 +10,13 @@ OBJ=test_lexer.o lex.yy.o
 all: test_lexer
 
 test_lexer: $(OBJ)
-	$(CXX) $(LDFLAGS) $(LIBS) -o $@ $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $@ 
 
 test: test_lexer
 	./test_lexer
 
 lex.yy.o: lex.yy.c
-	$(CXX) $(CXXFLAGS) $<
+	$(CXX) -Og -c $<
 
 lex.yy.c: tiger.l
 	flex $<

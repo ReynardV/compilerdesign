@@ -1,8 +1,8 @@
+%option noyywrap
 %{
 #include <iostream>
 using namespace std;
-#define YY_DECL extern "C" int yylex()
-#include tokens.hh 
+#include "tokens.hh"
 %}
 
 %%
@@ -37,7 +37,6 @@ using namespace std;
 "\""				{return DOUBQUOTE;}
 "\\"				{return BACKSLASH;}
 [0-9,A,B,C,D,E,F]+	{return XNUM;}
-[0-7]+				{return NUM;}
 "\a"				{return ALERT;}
 "\b"				{return BACKSPACE;}
 "\f"				{return FORMFEED;}
@@ -70,8 +69,5 @@ using namespace std;
 
 
 %%
-int main() 
-{
-	return 0;
-}
+
 

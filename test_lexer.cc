@@ -1,7 +1,9 @@
 #include <iostream>
 using namespace std;
-#include "tiger.l"
+#include "tokens.hh"
 
+int yylex();
+extern FILE* yyin;
 
 
 int main() {
