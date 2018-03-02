@@ -1,3 +1,9 @@
+#include <iostream>
+using namespace std;
+#include "tiger.l"
+
+
+
 int main() {
 	FILE *myfile = fopen("test1.tig","r");
 	if (!myfile) {

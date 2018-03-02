@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace std;
 #define YY_DECL extern "C" int yylex()
-#include tokens.hh //PART 1
+#include tokens.hh 
 %}
 
-%% //PART 3:
+%%
 
 "+" 				{return ADD;}
 "-" 				{return SUB;}
@@ -70,7 +70,6 @@ using namespace std;
 
 
 %%
-//PART 2: test cases
 int main() 
 {
 	return 0;
