@@ -4,17 +4,26 @@ LDFLAGS=$(CXXFLAGS)
 LIBS=
 
 INC=tokens.hh
-SRC=test_lexer.l, tiger.l
-OBJ=$(SRC:.cc=.o)
+SRC=test_lexer.cc 
+OBJ=test_lexer.o lex.yy.o
 
 all: test_lexer
 
 test_lexer: $(OBJ)
 	$(CXX) $(LDFLAGS) $(LIBS) -o $@ $(OBJ)
 
-test: $(OBJ)
-	$(CXX) $(LDFLAGS) $(LIBS) -o $@ $(OBJ)
+test: test_lexer
+	./test_lexer
+
+lex.yy.o: lex.yy.c
+	$(CXX) $(CXXFLAGS) $<
+
+lex.yy.c: tiger.l
+	flex $<
+
+%.o.cc: %.cc %.hh
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
 
 clean:
-	rm -f $(OBJ)
-	
+	rm *.o lex.yy.c test_lexer
