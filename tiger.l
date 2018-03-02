@@ -65,6 +65,7 @@ using namespace std;
 "extends" 			{return EXTENDS;}
 "method" 			{return METHOD;}
 "new"				{return NEW;}
+[a-z,A-Z]+			{return VARIABLE;}
 
 
 

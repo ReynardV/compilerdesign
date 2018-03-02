@@ -57,5 +57,6 @@ enum token {
 	CLASS,
 	EXTENDS,
 	METHOD,
-	NEW
+	NEW,
+	VARIABLE
 };
