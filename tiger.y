@@ -11,31 +11,34 @@ struct EXPN {
 /* parens, exponent, product, sum*/
 
 %%
-assignment: var '=' expr
+assignment: var '=' expr {$$ = $3;}
+| var '=' boolex {$$ = $3;}
 
-expr: '(' sum ')' 
-| sum
+expr: '(' sum ')' {$$ = $2;}
+| sum {$$ = $1;}
 
 sum: expr '+' sum { $$ = newast('+', $1,$3); }
-| product
+| product {$$ = $1;}
 
 product: expr '*' product {$$ = newast('*', $1,$3);}
-| expon
+| expon {$$ = $1;}
 
-expon: expr '^' expr {$$ = EXPN}
-| expr
+expon: expr '^' expr {}
+| expr {$$ = $1;}
 
 boolex: expr "==" expr {}
-| expr "<" expr {}
-| expr ">" expr {}
 | expr "<=" expr {}
 | expr ">=" expr {}
 | expr "<>" expr {}
+| expr "<" expr {}
+| expr ">" expr {}
 
 
-statement: "if" boolex "then" expr 
-|"if" boolex "then" expr "else" expr
-|"while" boolex "do"
+statement: "if" boolex "then" expr "else" expr {}
+| "if" boolex "then" expr {}
+| "while" boolex "do" expr {}
 
+
+comment: "/*" comment "*/" {pass;}
 
 
