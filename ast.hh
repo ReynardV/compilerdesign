@@ -21,31 +21,106 @@ class ASTNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// A node type that evaluates identifiers:
+// ID node
 class IdASTNode : public ASTNode {
 	public:
-		IdASTNode (value_t value)
+		IdASTNode (value_t value) //takes in a string with no spaces
 		: ASTNode(), value_(value)
 		{}
 		virtual ~IdASTNode() = default;
 
-	virtual value_t print() const
-	{
-		return ("[ " + value_ + " ]");
-	}	
+		virtual value_t print() const
+		{
+			return (value_ );
+		}	
 
- private:
-  const value_t value_;
+	private:
+		const value_t value_;
 
 };
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		DECLARATIONS
+///////////////////////////////////////////////////////////////////////////////
+// Single Declaration
+class DecASTNode : public ASTNode {
+	public:
+		DecASTNode (ASTptr dec)
+		: ASTNode(), dec_(dec)
+		{}
+		virtual ~DecASTNode(){
+			delete dec_;
+		}
+
+		virtual value_t print() const
+		{
+			return (dec_->print());
+		}	
+
+	private:
+		const ASTptr dec_; //can be type declaration (l.109), variable declaration (l.203), or function declaration (l.233)
+
+};
+
+
+// Declaration Sequence
+class DecSeqASTNode : public ASTNode {
+	public:
+		DecSeqASTNode (ASTptr dec, ASTptr seq = nullptr) 
+		: ASTNode(), dec_(dec), seq_(seq)
+		{}
+		virtual ~DecSeqASTNode(){
+			delete dec_;
+			delete seq_;
+		}
+
+		virtual value_t print() const
+		{
+			if (seq_ == nullptr){
+				return (dec_->print());
+			} else {
+				return (dec_->print() + " \n " + seq_->print());
+			}
+		}	
+
+	private:
+		const ASTptr dec_; //single declaration
+		const ASTptr seq_; //declaration sequence
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //		TYPE DECLARATIONS
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-// Type IDs. Right now they're functionally like IDs, but they have some additional restrictions, so 
-// it's probably best to make it a separate type of node
+// Type Declaration
+class TypeDecASTNode : public ASTNode {
+	public:
+		TypeDecASTNode (ASTptr id, ASTptr type) 
+		: ASTNode(), id_(id), type_(type)
+		{}
+		virtual ~TypeDecASTNode(){
+			delete id_;
+			delete type_;
+		}
+
+		virtual value_t print() const
+		{
+			return ("type " + id_->print() + " = " + type_->print());
+		}	
+
+	private:
+		const ASTptr id_; // ID (l.24)
+		const ASTptr type_; //Type-ID, Array of Type, or Record Types
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Type IDs. Right now they're functionally like IDs, but they can only be certain 
+// words, so it's probably best to make it a separate type of node
 
 class TypeIdASTNode : public IdASTNode {
 
@@ -54,43 +129,23 @@ class TypeIdASTNode : public IdASTNode {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// A node type that evaluates type declarations:
-class TypeDecASTNode : public ASTNode {
-	public:
-		TypeDecASTNode (ASTptr id, ASTptr type) //type can be Type-Id, Array of, or Record Types
-		: ASTNode(), id_(id), type_(type)
-		{}
-		virtual ~TypeDecASTNode() = default;
-
-
-	virtual value_t print() const
-	{
-		return ("[ type " + id_ + " = " + type_ + " ]");
-	}	
-
-	private:
-		const value_t id_;
-		const value_t type_;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
 // Array of Type:
 class ArrayTypeASTNode : public ASTNode {
 	public:
-		ArrayTypeASTNode (ASTptr type) // type should be TypeId
+		ArrayTypeASTNode (ASTptr type) 
 		: ASTNode(), type_(type)
 		{}
-		virtual ~ArrayTypeASTNode() = default;
+		virtual ~ArrayTypeASTNode(){
+			delete type_;
+		}
 
-
-	virtual value_t print() const
-	{
-		return ("[ Array of " + type_ + " ]");
-	}	
+		virtual value_t print() const
+		{
+			return ("Array of " + type_->print());
+		}	
 
 	private:
-		const value_t type_;
+		const ASTptr type_; //Type-ID
 
 };
 
@@ -98,25 +153,28 @@ class ArrayTypeASTNode : public ASTNode {
 // Records Fields:
 class RecFieldASTNode : public ASTNode {
 	public:
-		RecFieldASTNode (ASTptr id, ASTptr type, ASTptr fields = nullptr) //fields should be Records Field
+		RecFieldASTNode (ASTptr id, ASTptr type, ASTptr fields = nullptr)
 		: ASTNode(), id_(id), type_(type), fields_(fields)
 		{}
-		virtual ~RecFieldASTNode() = default;
-
-
-	virtual value_t print() const
-	{
-		if (fields == nullptr){
-			return (id_ + ": " + type_);
-		} else {
-			return (id_ + ": " + type_ + ", " + fields_);
+		virtual ~RecFieldASTNode(){
+			delete id_;
+			delete type_;
+			delete fields_;
 		}
-	}	
+
+		virtual value_t print() const
+		{
+			if (fields_ == nullptr){
+				return (id_->print() + ": " + type_->print());
+			} else {
+				return (id_->print() + ": " + type_->print() + ", " + fields_->print());
+			}
+		}	
 
 	private:
-		const value_t id_;
-		const value_t type_;
-		const value_t fields_
+		const ASTptr id_; // ID
+		const ASTptr type_; // Type-ID
+		const ASTptr fields_; //Records Fields
 };
 
 
@@ -124,115 +182,134 @@ class RecFieldASTNode : public ASTNode {
 // Record types:
 class RecTypeASTNode : public ASTNode {
 	public:
-		RecTypeASTNode (ASTptr fields) //fields should be Records Field
+		RecTypeASTNode (ASTptr fields) 
 		: ASTNode(), fields_(fields)
 		{}
-		virtual ~RecTypeASTNode() = default;
+		virtual ~RecTypeASTNode(){
+			delete fields_;
+		}
 
-
-	virtual value_t print() const
-	{
-
-		return ("{" + fields_ + "}");
-	
-	}	
+		virtual value_t print() const
+		{
+			return ("{" + fields_->print() + "}");
+		}	
 
 	private:
 
-		const value_t fields_
+		const ASTptr fields_ //Records Field or empty
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //		VARIABLE DECLARATION
 ///////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-// Variable Declaration (Short)
-class SVarDecASTNode : public ASTNode {
+class VarDecASTNode : public ASTNode {
 	public:
-		SVarDecASTNode (ASTptr id, ASTptr exp) //exp should be an expression
-		: ASTNode(), id_(id), exp_(exp)
-		{}
-		virtual ~SVarDecASTNode() = default;
-
-
-	virtual value_t print() const
-	{
-		return ("[ var " + id_ + " := " + exp_ + " ]")
-	}	
-
-	private:
-		const value_t id_;
-		const value_t exp_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-// Variable Declaration (Long)
-class LVarDecASTNode : public ASTNode {
-	public:
-		LVarDecASTNode (ASTptr id, ASTptr type, ASTptr exp) //exp should be an expression
+		VarDecASTNode (ASTptr id, ASTptr type = nullptr, ASTptr exp)
 		: ASTNode(), id_(id), type_(type), exp_(exp)
 		{}
-		virtual ~LVarDecASTNode() = default;
+		virtual ~VarDecASTNode(){
+			delete id_;
+			delete type_;
+			delete exp_;
+		}
 
-
-	virtual value_t print() const
-	{
-		return ("[ var " + id_ + " : " + type_ + " := " + exp_ + " ]")
-	}	
+		virtual value_t print() const
+		{
+			if (type_ == nullptr){
+				return ("var " + id_->print() + " := " + exp_->print())
+			} else {
+				return ("var " + id_->print() + " : " + type_->print() + " := " + exp_->print())
+			}
+		}	
 
 	private:
-		const value_t id_;
-		const value_t type_;
-		const value_t exp_;
+		const ASTptr id_; //ID
+		const ASTptr type_; //Type-ID
+		const ASTptr exp_; //Single expression (l.270)
 };
 
 
 ///////////////////////////////////////////////////////////////////////////////
 //		FUNCTION DECLARATION
 ///////////////////////////////////////////////////////////////////////////////
-
-// Procedure Declaration 
-class ProcDecASTNode : public ASTNode {
+class FuncDecASTNode : public ASTNode {
 	public:
-		ProcDecASTNode (ASTptr id, ASTptr fields, ASTptr exp) 
-		: ASTNode(), id_(id), fields_(fields), exp_(exp)
+		FuncDecASTNode (ASTptr id, ASTptr fields, ASTptr type = nullptr, ASTptr exp) 
+		: ASTNode(), id_(id), fields_(fields), type_(type), exp_(exp)
 		{}
-		virtual ~ProcDecASTNode() = default;
+		virtual ~FuncDecASTNode(){
+			delete id_;
+			delete fields_;
+			delete type_;
+			delete exp_;
+		}
 
-
-	virtual value_t print() const
-	{
-		return ("[ function " + id_ + " (" + fields_ + ") = " + exp_ + " ]")
-	}	
+		virtual value_t print() const
+		{
+			if (type_ == nullptr){
+				return ("function " + id_->print() + " (" + fields_->print() + ") = " + exp_->print())
+			} else{
+				return ("function " + id_->print() + " (" + fields_->print() + "): " + type_->print() + " = " + exp_->print())
+			}
+		}	
 
 	private:
-		const value_t id_;
-		const value_t fields_;
-		const value_t exp_;
+		const ASTptr id_;
+		const ASTptr fields_; //Record Fields(l.153)
+		const ASTptr type_;
+		const ASTptr exp_;
 };
 
 
+///////////////////////////////////////////////////////////////////////////////
+//		EXPRESSIONS 
+///////////////////////////////////////////////////////////////////////////////
 
-// Function Declaration 
-class FuncDecASTNode : public ASTNode {
+// Single Expression
+class ExpASTNode : public ASTNode {
 	public:
-		FuncDecASTNode (ASTptr id, ASTptr fields, ASTptr type, ASTptr exp) 
-		: ASTNode(), id_(id), fields_(fields), type_(type), exp_(exp)
+		ExpASTNode (ASTptr exp) // exp can be anything below between and including literals and control structs
+		: ASTNode(), exp_(exp)
 		{}
-		virtual ~FuncDecASTNode() = default;
+		virtual ~ExpASTNode(){
+			delete exp_;
+		}
 
 
-	virtual value_t print() const
-	{
-		return ("[ function " + id_ + " (" + fields_ + "): " + type_ + " = " + exp_ + " ]")
-	}	
+		virtual value_t print() const
+		{
+			return (exp_->print());
+		}	
 
 	private:
-		const value_t id_;
-		const value_t fields_;
-		const value_t type_;
-		const value_t exp_;
+		const ASTptr exp_; //
+
+};
+
+
+// Expression Sequence
+class ExpSeqASTNode : public ASTNode {
+	public:
+		ExpSeqASTNode (ASTptr exp, ASTptr seq = nullptr) 
+		: ASTNode(), exp_(dec), seq_(seq)
+		{}
+		virtual ~ExpSeqASTNode(){
+			delete exp_;
+			delete seq_;
+		}
+
+		virtual value_t print() const
+		{
+			if (seq_ == nullptr){
+				return (exp_->print());
+			} else {
+				return (exp_->print() + "; " + seq_->print());
+			}
+		}	
+
+	private:
+		const ASTptr exp_; //Single expression
+		const ASTptr seq_; //Expression Sequence
 };
 
 
@@ -243,24 +320,26 @@ class FuncDecASTNode : public ASTNode {
 ///////////////////////////////////////////////////////////////////////////////
 // Integers
 class NumASTNode : public ASTNode {
- public:
-  NumASTNode(value_t value)
-   : ASTNode(), value_(value), numValue_(atoi(value))
-  {}
-  virtual ~NumASTNode() = default;
+	public:
+	  	NumASTNode(value_t value)
+	   	: ASTNode(), value_(value)
+	  	{}
+	  	virtual ~NumASTNode() = default;
+
+	  	virtual int eval() const
+	  	{
+	    	return atoi(value_);
+	  	}
 
 
+	  	virtual value_t print() const
+	  	{
+	    	return (value_);
+	  	}
 
 
-  virtual value_t print() const
-  {
-    return ("[ " + value_ + " ]");
-  }
-
-
- private:
-  const value_t value_;
-  const int numValue_;
+	private:
+	  	const value_t value_;
 };
 
 
@@ -273,18 +352,601 @@ class StrASTNode : public ASTNode {
 		virtual ~StrASTNode() = default;
 
 
-	virtual value_t print() const
-	{
-		return ("[ \"" + value_ + "\" ]");
-	}	
+		virtual value_t print() const
+		{
+			return ("\"" + value_ + "\"");
+		}	
 
  private:
   const value_t value_;
 
 };
 
+// Nil
+class NilASTNode : public ASTNode {
+	public:
+		NilASTNode ()
+		: ASTNode()
+		{}
+		virtual ~NilASTNode() = default;
 
 
+		virtual value_t print() const
+		{
+			return ("");
+		}	
+
+};
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		CREATION
+///////////////////////////////////////////////////////////////////////////////
+
+// Array Creation
+class ArrCreateASTNode : public ASTNode {
+	public:
+		ArrCreateASTNode (ASTptr type, ASTptr size, ASTptr init) 
+		: ASTNode(), type_(type), size_(size), init_(init)
+		{}
+		virtual ~ArrCreateASTNode(){
+			delete type_;
+			delete size_;
+			delete init_;
+		}
+
+		virtual value_t print() const
+		{
+			return (type_->print() + "[" + size_->print() + "] of " + init_->print());
+		}	
+
+ 	private:
+ 		const ASTptr type_; 
+  		const ASTptr size_; // Single Expression, integer
+  		const ASTptr init_; // Single Expression
+};
+
+
+// Record Fields
+class RecordFieldASTNode : public ASTNode {
+	public:
+		RecordFieldASTNode (ASTptr id, ASTptr exp, ASTptr fields = nullptr) 
+		: ASTNode(), id_(id), type_(type), fields_(fields)
+		{}
+		virtual ~RecordFieldASTNode(){
+			delete id_;
+			delete exp_;
+			delete fields_;
+		}
+
+		virtual value_t print() const
+		{
+			if (fields_ == nullptr){
+				return (id_->print() + "=" + type_->print());
+			} else {
+				return (id_->print() + "=" + type_->print() + ", " + fields_->print());
+			}
+		}	
+
+	private:
+		const ASTptr id_;
+		const ASTptr exp_;
+		const ASTptr fields_; //Record Fields
+};
+
+
+// Record Creation
+class RecCreateASTNode : public ASTNode {
+	public:
+		RecCreateASTNode (ASTptr type, ASTptr fields) 
+		: ASTNode(), type_(type), fields_(fields)
+		{}
+		virtual ~RecCreateASTNode(){
+			delete type_;
+			delete fields_;
+		}
+
+		virtual value_t print() const
+		{
+			return (type_->print() + "{" + fields_->print() + "}");
+		}	
+
+ 	private:
+ 		const ASTptr type_;
+  		const ASTptr fields_;
+};
+
+
+
+// Object Creation
+
+class ObjCreateASTNode : public ASTNode {
+	public:
+		ObjCreateASTNode (ASTptr type) 
+		: ASTNode(), type_(type)
+		{}
+		virtual ~ObjCreateASTNode(){
+			delete type_;
+		}
+
+
+		virtual value_t print() const
+		{
+			return ("new " + type_->print());
+		}	
+
+ 	private:
+ 		const ASTptr type_;
+};
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		CALLS
+///////////////////////////////////////////////////////////////////////////////
+// Expression List
+class ExpListASTNode : public ASTNode {
+	public:
+		ExpListASTNode (ASTptr exp, ASTptr list = nullptr) 
+		: ASTNode(), exp_(exp), list_(list)
+		{}
+		virtual ~ExpListASTNode(){
+			delete exp_;
+			delete list_;
+		}
+
+
+		virtual value_t print() const
+		{
+			if (fields_ == nullptr){
+				return (exp_->print());
+			} else {
+				return (exp_->print() + ", " + list_->print());
+			}
+		}	
+
+ 	private:
+ 		const ASTptr exp_;
+ 		const ASTptr list_; // Expression List
+};
+
+
+
+// Function Call
+
+class FunCallASTNode : public ASTNode {
+	public:
+		FunCallASTNode (ASTptr id, ASTptr list) 
+		: ASTNode(), id_(id), list_(list)
+		{}
+		virtual ~FunCallASTNode(){
+			delete id_;
+			delete list_;
+		}
+
+		virtual value_t print() const
+		{
+			return (id_->print() + " (" + list_->print() + ")");
+		}	
+
+ 	private:
+ 		const ASTptr id_;
+ 		const ASTptr list_;
+};
+
+
+
+// Method Call
+
+class MethodCallASTNode : public ASTNode {
+	public:
+		MethodCallASTNode (ASTptr lval, ASTptr fun) 
+		: ASTNode(), lval_(lval), fun_(fun)
+		{}
+		virtual ~MethodCallASTNode(){
+			delete lval_; 
+			delete fun_;
+		}
+
+
+		virtual value_t print() const
+		{
+			return (lval_->print() + "." + fun_->print());
+		}	
+
+ 	private:
+ 		const ASTptr lval_; // Any L-Value (l.765)
+ 		const ASTptr fun_; // Takes a function call
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		ARITHMETIC 
+///////////////////////////////////////////////////////////////////////////////
+// Template Binary Operator
+class OpASTNode : public ASTNode {
+	public:
+		OpASTNode (ASTptr left, ASTptr right) 
+		: ASTNode(), left_(left), right_(right)
+		{}
+		virtual ~OpASTNode(){
+			delete left_;
+			delete right_;
+		}
+
+		virtual value_t sign = default;
+		virtual auto op = default;
+
+
+	  	virtual int eval() const
+	  	{
+	    	return op<int>(left_->eval(), right_->eval());
+	  	}
+
+		virtual value_t print() const
+		{
+			return (left_->print() + sign + right_->print());
+		}	
+
+	protected:
+ 		const ASTptr left_; // Integer Literal (l.323)
+ 		const ASTptr right_; // Integer Literal
+};
+
+// plus
+class PlusASTNode : public OpASTNode {
+	public:
+		using OpASTNode::OpASTNode;
+		virtual ~PlusASTNode(){
+			delete left_;
+			delete right_;
+		}
+
+		virtual value_t sign = "+";
+		virtual auto op = std::plus;
+}
+
+
+// minus
+class MinusASTNode : public OpASTNode {
+	public:
+		using OpASTNode::OpASTNode;
+		virtual ~MinusASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "-";
+		virtual auto op = std::minus;
+}
+
+
+// multiplies
+class MultASTNode : public OpASTNode {
+	public:
+		using OpASTNode::OpASTNode;
+		virtual ~MultASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "*";
+		virtual auto op = std::multiplies;
+}
+
+
+// divides
+class DivASTNode : public OpASTNode {
+	public:
+		using OpASTNode::OpASTNode;
+		virtual ~DivASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "/";
+		virtual auto op = std::divides;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//		COMPARATORS 
+///////////////////////////////////////////////////////////////////////////////
+
+// Template Comparator
+class CompASTNode : public ASTNode {
+	public:
+		CompASTNode (ASTptr left, ASTptr right) 
+		: ASTNode(), left_(left), right_(right)
+		{}
+		virtual ~CompASTNode(){
+			delete left_;
+			delete right_;
+		}
+
+		virtual value_t sign = default;
+
+		virtual value_t print() const
+		{
+			return (left_->print() + sign + right_->print());
+		}	
+
+	protected:
+ 		const ASTptr left_; // Expression
+ 		const ASTptr right_; // Expression
+};
+
+
+// equal
+class EqASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~EqASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "=";
+}
+
+
+
+// not equal
+class NeqASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~NeqASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "<>";
+}
+
+
+// less than
+class LessASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~LessASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "<";
+}
+
+
+// greater than
+class GreatASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~GreatASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = ">";
+}
+
+
+// less than or equal to
+class LeqASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~LeqASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = "<=";
+}
+
+
+// greater than or equal to
+class GreqASTNode : public CompASTNode {
+	public:
+		using CompASTNode::CompASTNode;
+		virtual ~GreqASTNode(){
+			delete left_;
+			delete right_;
+		}
+		
+		virtual value_t sign = ">=";
+}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		L-VALUES 
+///////////////////////////////////////////////////////////////////////////////
+
+// Variable
+class VarASTNode : public ASTNode {
+	public:
+		VarASTNode (ASTptr id)
+		: ASTNode(), id_(id)
+		{}
+		virtual ~VarASTNode(){
+			delete id_;
+		}
+
+		virtual value_t print() const
+		{
+			return (id_->print());
+		}	
+
+ 	private:
+  		const ASTptr id_;
+};
+
+
+// Dot Field
+class DotFieldASTNode : public ASTNode {
+	public:
+		DotFieldASTNode (ASTptr lval, ASTptr id)
+		: ASTNode(), lval_(lval), id_(id)
+		{}
+		virtual ~DotFieldASTNode(){
+			delete lval_;
+			delete id_;
+		}
+
+		virtual value_t print() const
+		{
+			return (lval_->print() + "." + id_->print());
+		}	
+
+ 	private:
+ 		const ASTptr lval_;
+  		const ASTptr id_;
+};
+
+
+// Array Element Notation
+class ArrElASTNode : public ASTNode {
+	public:
+		ArrElASTNode (ASTptr lval, ASTptr exp)
+		: ASTNode(), lval_(lval), exp_(exp)
+		{}
+		virtual ~ArrElASTNode(){
+			delete lval_;
+			delete exp_;
+		}
+
+		virtual value_t print() const
+		{
+			return (lval_->print() + "[" + exp_->print() + "]");
+		}	
+
+ 	private:
+ 		const ASTptr lval_;
+  		const ASTptr exp_;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+//		CONTROL STRUCTURES 
+///////////////////////////////////////////////////////////////////////////////
+
+// If-Then-Else
+class IfASTNode : public ASTNode {
+	public:
+		IfASTNode (ASTptr ifExp, ASTptr thenExp, ASTptr elseExp = nullptr) 
+		: ASTNode(), ifExp_(ifExp), thenExp_(thenExp), elseExp_(elseExp) // all inputs are expressions
+		{}
+		virtual ~IfASTNode(){
+			delete ifExp_;
+			delete thenExp_;
+			delete elseExp_;
+		}
+
+		virtual value_t print() const
+		{
+			if (elseExp_ != nullptr){
+				return ("if " + ifExp_->print() + " then " + thenExp_->print() + " else " + elseExp_->print());
+			} else {
+				return ("if " + ifExp_->print() + " then " + thenExp_->print());
+			}
+		}	
+
+ 	private:
+  		const ASTptr ifExp_;
+  		const ASTptr thenExp_;
+  		const ASTptr elseExp_;
+};
+
+
+// While-Do
+class WhileASTNode : public ASTNode {
+	public:
+		WhileASTNode (ASTptr whileExp, ASTptr doExp)
+		: ASTNode(), whileExp_(whileExp), doExp_(doExp)
+		{}
+		virtual ~WhileASTNode(){
+			delete whileExp_ ;
+			delete doExp_;
+		}
+
+		virtual value_t print() const
+		{
+			return ("while " + whileExp_->print() + " do " + doExp_->print());
+
+		}	
+
+ 	private:
+  		const ASTptr whileExp_;
+  		const ASTptr doExp_;
+};
+
+
+// For loop
+class ForASTNode : public ASTNode {
+	public:
+		ForASTNode (ASTptr id, ASTptr start, ASTptr end, ASTptr exp) 
+		: ASTNode(), id_(id), start_(start), end_(end), exp_(exp)
+		{}
+		virtual ~ForASTNode(){
+			delete id_;
+			delete start_;
+			delete end_;
+			delete exp_;
+		}
+
+		virtual value_t print() const
+		{
+			return ("for " + id_->print() + ":= " + start_->print() + " to " + end_->print() + " do " + exp_->print());
+		}	
+
+ 	private:
+  		const ASTptr id_;
+  		const ASTptr start_; // expression that produces an integer
+  		const ASTptr end_; // expression that produces an integer
+  		const ASTptr exp_; // expression
+
+};
+
+
+// Break
+class BreakASTNode : public ASTNode {
+	public:
+		BreakASTNode () // takes no input, but can only go in "exp" of a for loop, or in "doExp" in a while loop
+		: ASTNode()
+		{}
+		virtual ~BreakASTNode() = default;
+
+
+		virtual value_t print() const
+		{
+			return ("break");
+		}	
+
+};
+
+
+// Let-In
+class LetASTNode : public ASTNode {
+	public:
+		LetASTNode (ASTptr decs, ASTptr exps) 
+		: ASTNode(), decs_(decs), exps_(exps)
+		{}
+		virtual ~LetASTNode(){
+			delete decs_;
+			delete exps_;
+		}
+
+		virtual value_t print() const
+		{
+			return ("let " + decs_->print() + " in " + exps_->print() + " end");
+
+		}	
+
+ 	private:
+  		const ASTptr decs_; // Declaration sequence (l.68)
+  		const ASTptr exps_; // Expression sequence (l.292)
+};
 
 
 
