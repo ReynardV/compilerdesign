@@ -126,7 +126,7 @@ class TypeIdASTNode : public IdASTNode {
 
 	private:
 		const value_t value_;
-}
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Array of Type:
@@ -196,7 +196,7 @@ class RecTypeASTNode : public ASTNode {
 
 	private:
 
-		const ASTptr fields_ //Records Field or empty
+		const ASTptr fields_; //Records Field or empty
 };
 
 ///////////////////////////////////////////////////////////////////////////////
