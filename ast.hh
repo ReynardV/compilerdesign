@@ -12,7 +12,7 @@ namespace tiger {
 // Base AST node class, to define the hierarchy.
 class ASTNode {
  public:
-  using value_t = std::string;  // All values will be floating-point
+  using value_t = std::string;  
   using ASTptr = const ASTNode*; // Can't use smart ptr in union :(
 
   ASTNode() = default;
@@ -204,13 +204,13 @@ class RecTypeASTNode : public ASTNode {
 ///////////////////////////////////////////////////////////////////////////////
 class VarDecASTNode : public ASTNode {
 	public:
-		VarDecASTNode (ASTptr id, ASTptr type = nullptr, ASTptr exp)
-		: ASTNode(), id_(id), type_(type), exp_(exp)
+		VarDecASTNode (ASTptr id, ASTptr exp, ASTptr type = nullptr)
+		: ASTNode(), id_(id), exp_(exp), type_(type)
 		{}
 		virtual ~VarDecASTNode(){
 			delete id_;
-			delete type_;
 			delete exp_;
+			delete type_;
 		}
 
 		virtual value_t print() const
@@ -224,8 +224,8 @@ class VarDecASTNode : public ASTNode {
 
 	private:
 		const ASTptr id_; //ID
-		const ASTptr type_; //Type-ID
 		const ASTptr exp_; //Single expression (l.270)
+		const ASTptr type_; //Type-ID
 };
 
 
@@ -234,7 +234,7 @@ class VarDecASTNode : public ASTNode {
 ///////////////////////////////////////////////////////////////////////////////
 class FuncDecASTNode : public ASTNode {
 	public:
-		FuncDecASTNode (ASTptr id, ASTptr fields, ASTptr type = nullptr, ASTptr exp) 
+		FuncDecASTNode (ASTptr id, ASTptr fields, ASTptr exp, ASTptr type = nullptr) 
 		: ASTNode(), id_(id), fields_(fields), type_(type), exp_(exp)
 		{}
 		virtual ~FuncDecASTNode(){
@@ -291,7 +291,7 @@ class ExpASTNode : public ASTNode {
 class ExpSeqASTNode : public ASTNode {
 	public:
 		ExpSeqASTNode (ASTptr exp, ASTptr seq = nullptr) 
-		: ASTNode(), exp_(dec), seq_(seq)
+		: ASTNode(), exp_(exp), seq_(seq)
 		{}
 		virtual ~ExpSeqASTNode(){
 			delete exp_;
@@ -321,6 +321,8 @@ class ExpSeqASTNode : public ASTNode {
 // Integers
 class NumASTNode : public ASTNode {
 	public:
+		using ASTintptr = const NumASTNode*;
+
 	  	NumASTNode(value_t value)
 	   	: ASTNode(), value_(value)
 	  	{}
@@ -328,7 +330,7 @@ class NumASTNode : public ASTNode {
 
 	  	virtual int eval() const
 	  	{
-	    	return atoi(value_);
+	    	return std::atoi(value_);
 	  	}
 
 
@@ -412,12 +414,12 @@ class ArrCreateASTNode : public ASTNode {
 // Record Fields
 class RecordFieldASTNode : public ASTNode {
 	public:
-		RecordFieldASTNode (ASTptr id, ASTptr exp, ASTptr fields = nullptr) 
+		RecordFieldASTNode (ASTptr id, ASTptr type, ASTptr fields = nullptr) 
 		: ASTNode(), id_(id), type_(type), fields_(fields)
 		{}
 		virtual ~RecordFieldASTNode(){
 			delete id_;
-			delete exp_;
+			delete type_;
 			delete fields_;
 		}
 
@@ -432,7 +434,7 @@ class RecordFieldASTNode : public ASTNode {
 
 	private:
 		const ASTptr id_;
-		const ASTptr exp_;
+		const ASTptr type_;
 		const ASTptr fields_; //Record Fields
 };
 
@@ -500,7 +502,7 @@ class ExpListASTNode : public ASTNode {
 
 		virtual value_t print() const
 		{
-			if (fields_ == nullptr){
+			if (list_ == nullptr){
 				return (exp_->print());
 			} else {
 				return (exp_->print() + ", " + list_->print());
@@ -566,195 +568,52 @@ class MethodCallASTNode : public ASTNode {
 //		ARITHMETIC 
 ///////////////////////////////////////////////////////////////////////////////
 // Template Binary Operator
-class OpASTNode : public ASTNode {
+template <template <typename> class O>
+class OpASTNode : public NumASTNode {
 	public:
-		OpASTNode (ASTptr left, ASTptr right) 
-		: ASTNode(), left_(left), right_(right)
+		OpASTNode (std::string sign, ASTintptr left, ASTintptr right) 
+		: NumASTNode(), sign_(sign), left_(left), right_(right)
 		{}
 		virtual ~OpASTNode(){
 			delete left_;
 			delete right_;
 		}
 
-		virtual value_t sign = default;
-		virtual auto op = default;
 
-
-	  	virtual int eval() const
+	  	int eval() const
 	  	{
-	    	return op<int>(left_->eval(), right_->eval());
+	    	auto op = O<int>();
+	    	return op(left_->eval(), right_->eval());
 	  	}
 
 		virtual value_t print() const
 		{
-			return (left_->print() + sign + right_->print());
+			return (left_->print() + sign_ + right_->print());
 		}	
 
 	protected:
- 		const ASTptr left_; // Integer Literal (l.323)
- 		const ASTptr right_; // Integer Literal
-};
-
-// plus
-class PlusASTNode : public OpASTNode {
-	public:
-		using OpASTNode::OpASTNode;
-		virtual ~PlusASTNode(){
-			delete left_;
-			delete right_;
-		}
-
-		virtual value_t sign = "+";
-		virtual auto op = std::plus;
-}
-
-
-// minus
-class MinusASTNode : public OpASTNode {
-	public:
-		using OpASTNode::OpASTNode;
-		virtual ~MinusASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "-";
-		virtual auto op = std::minus;
-}
-
-
-// multiplies
-class MultASTNode : public OpASTNode {
-	public:
-		using OpASTNode::OpASTNode;
-		virtual ~MultASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "*";
-		virtual auto op = std::multiplies;
-}
-
-
-// divides
-class DivASTNode : public OpASTNode {
-	public:
-		using OpASTNode::OpASTNode;
-		virtual ~DivASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "/";
-		virtual auto op = std::divides;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//		COMPARATORS 
-///////////////////////////////////////////////////////////////////////////////
-
-// Template Comparator
-class CompASTNode : public ASTNode {
-	public:
-		CompASTNode (ASTptr left, ASTptr right) 
-		: ASTNode(), left_(left), right_(right)
-		{}
-		virtual ~CompASTNode(){
-			delete left_;
-			delete right_;
-		}
-
-		virtual value_t sign = default;
-
-		virtual value_t print() const
-		{
-			return (left_->print() + sign + right_->print());
-		}	
-
-	protected:
- 		const ASTptr left_; // Expression
- 		const ASTptr right_; // Expression
+		const std::string sign_;
+ 		const ASTintptr left_; // Integer Literal (l.323)
+ 		const ASTintptr right_; // Integer Literal
 };
 
 
-// equal
-class EqASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~EqASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "=";
-}
 
 
 
-// not equal
-class NeqASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~NeqASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "<>";
-}
 
 
-// less than
-class LessASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~LessASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "<";
-}
 
 
-// greater than
-class GreatASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~GreatASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = ">";
-}
 
 
-// less than or equal to
-class LeqASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~LeqASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = "<=";
-}
 
 
-// greater than or equal to
-class GreqASTNode : public CompASTNode {
-	public:
-		using CompASTNode::CompASTNode;
-		virtual ~GreqASTNode(){
-			delete left_;
-			delete right_;
-		}
-		
-		virtual value_t sign = ">=";
-}
+
+
+
+
+
 
 
 
